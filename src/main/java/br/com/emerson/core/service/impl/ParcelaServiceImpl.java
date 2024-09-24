@@ -41,6 +41,14 @@ public class ParcelaServiceImpl implements ParcelaService {
 
     @Override
     @Transactional
+    public void atualizarSituacaoParcela(Long idParcela, SituacaoParcelaEnum situacao) {
+        var entity = this.parcelaRepository.findById(idParcela);
+        entity.setSituacao(situacao);
+        this.parcelaRepository.persistAndFlush(entity);
+    }
+
+    @Override
+    @Transactional
     public void atualizar(Long id, ParcelaRequest request) {
 
     }

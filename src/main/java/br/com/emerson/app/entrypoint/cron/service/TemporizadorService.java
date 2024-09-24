@@ -6,20 +6,19 @@ import br.com.emerson.core.enums.TipoCartaoEnum;
 import br.com.emerson.core.service.CartaoService;
 import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Singleton
 @Startup
@@ -43,14 +42,17 @@ public class TemporizadorService {
 
     @PostConstruct
     public void init() {
-        executorService = new ScheduledThreadPoolExecutor(5);
+        executorService = Executors.newScheduledThreadPool(5);
         mapJobs = new HashMap<>();
         cartaoService.listarCartoes().stream().filter(card-> !card.getTipoCartao().equals(TipoCartaoEnum.DEBITO)).forEach(cartao -> {
             arrayJobs =  new ScheduledFuture<?>[1];
             arrayJobs[JOB_FECHAMENTO_FATURA] = fechamentoFaturaJob(executorService, cartao);
         });
     }
-
+    @PreDestroy
+    public void stop() {
+        executorService.shutdown();
+    }
     private ScheduledFuture<?> fechamentoFaturaJob(ScheduledExecutorService executor, CartaoEntity cartao) {
 
         ScheduledFuture<?> result;
@@ -68,10 +70,10 @@ public class TemporizadorService {
         jFechamentoFatura.setDigitosFinais(cartao.getDigitosFinais());
         jFechamentoFatura.setIdCartao(cartao.getIdCartao());
         jFechamentoFatura.setDiaVencimento(cartao.getDiaVencimento());
+        jFechamentoFatura.imprimeLog();
 
         long initialDelay = calcularDelay(targetHour, targetMinute);
-        result = executor.scheduleAtFixedRate(jFechamentoFatura, initialDelay, TimeUnit.DAYS.toMinutes(1), TimeUnit.MINUTES);
-        jFechamentoFatura.imprimeLog();
+        result = executor.scheduleAtFixedRate(jFechamentoFatura, 0, 1, TimeUnit.MINUTES);
         return result;
     }
 
@@ -81,7 +83,7 @@ public class TemporizadorService {
         if (now.isAfter(nextRun)) {
             nextRun = nextRun.plusDays(1);
         }
-        return ChronoUnit.MINUTES.between(now, nextRun);
+        return Duration.between(now, nextRun).getSeconds();
     }
 
 

@@ -87,7 +87,10 @@ public class FaturaServiceImpl implements FaturaService {
     public FaturaEntity findFaturaGeradaByDataAndCartao(UUID idCartao, LocalDate dataFechamento) {
         return faturaRepository.find("idCartao =?1 and dataFaturaGerada between ?2 and ?3",
                         idCartao,
-                        dataFechamento.minusMonths(1), dataFechamento)
+                        dataFechamento.minusMonths(1)
+                                .atTime(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0)
+                                        .toLocalTime()), dataFechamento.atTime(LocalDateTime.now().withHour(23).withMinute(59).withSecond(59)
+                                .toLocalTime()))
                 .firstResultOptional().orElse(null);
     }
 }

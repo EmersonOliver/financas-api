@@ -13,6 +13,8 @@ public interface ParcelaService {
 
     void salvar(ParcelaRequest parcela);
 
+    void atualizarSituacaoParcela(Long idParcela, SituacaoParcelaEnum situacao);
+
     void atualizar(Long id, ParcelaRequest request);
 
     void atualizar(Long id, ParcelaEntity parcela);

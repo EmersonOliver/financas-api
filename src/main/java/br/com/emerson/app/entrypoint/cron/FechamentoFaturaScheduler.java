@@ -37,12 +37,16 @@ public class FechamentoFaturaScheduler extends JobCommons implements Runnable {
                     comprasService.listarComprasByDataAndCartao(getIdCartao(),
                             getDataFechamento().minusMonths(1),
                             getDataFechamento());
+
+
             if (compras.isEmpty()) {
-                fatura.setVlFatura(BigDecimal.ZERO);
-                fatura.setSituacaoFatura(SituacaoFaturaEnum.PAGA);
-                fatura.setDataFaturaGerada(getDataFechamento().atTime(LocalTime.now()));
-                fatura.setDataFaturaVencimento(LocalDate.of(getDataFechamento().getYear(), getDataFechamento().getMonth(), getDiaVencimento()));
-                fatura.setIdCartao(getIdCartao());
+                fatura = FaturaEntity.builder()
+                        .vlFatura(BigDecimal.ZERO)
+                        .situacaoFatura(SituacaoFaturaEnum.PAGA)
+                        .dataFaturaGerada(getDataFechamento().atTime(LocalTime.now()))
+                        .dataFaturaVencimento(LocalDate.of(getDataFechamento().getYear(), getDataFechamento().getMonth(), getDiaVencimento()))
+                        .idCartao(getIdCartao())
+                        .build();
                 faturaService.salvarFatura(fatura);
             } else {
                 BigDecimal valorFatura = BigDecimal.ZERO;
@@ -54,8 +58,11 @@ public class FechamentoFaturaScheduler extends JobCommons implements Runnable {
                     }
                 }
                 fatura.setVlFatura(valorFatura);
-                fatura.setSituacaoFatura(SituacaoFaturaEnum.PENDENTE);
-
+                fatura.setSituacaoFatura(SituacaoFaturaEnum.ABERTA);
+                fatura.setDataFaturaGerada(getDataFechamento().atTime(LocalTime.now()));
+                fatura.setDataFaturaVencimento(LocalDate.of(getDataFechamento().getYear(), getDataFechamento().getMonth(), getDiaVencimento()));
+                fatura.setIdCartao(getIdCartao());
+                this.faturaService.salvarFatura(fatura);
             }
         } else {
             log.info("Ja contem faturas neste periodo para o cartao -->" + fatura.getCartao().getApelido());

@@ -35,7 +35,23 @@ public enum SituacaoFaturaEnum {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             entity.setVlFatura(valorFatura);
         }
+    },
+    ABERTA {
+        @Override
+        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
+            BigDecimal valorFatura = compras.stream()
+                    .map(ParcelaEntity::getValorParcela)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            entity.setVlFatura(valorFatura);
+        }
+    },
+    FECHADA {
+        @Override
+        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
+
+        }
     };
+
 
     public abstract void build(List<ParcelaEntity> compras, FaturaEntity entity);
 }

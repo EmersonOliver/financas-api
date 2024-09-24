@@ -7,7 +7,6 @@ import br.com.emerson.core.entity.ComprasEntity;
 import br.com.emerson.core.entity.MovimentacaoCarteiraEntity;
 import br.com.emerson.core.entity.ParcelaEntity;
 import br.com.emerson.core.enums.MovimentacaoEnum;
-import br.com.emerson.core.enums.SituacaoParcelaEnum;
 import br.com.emerson.core.enums.TipoCartaoEnum;
 import br.com.emerson.core.service.*;
 import br.com.emerson.domain.exception.BusinessException;
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,9 +47,9 @@ public class ComprasServiceImpl implements ComprasService {
                 cartao.getVlLimiteTotal().subtract(cartao.getVlLimiteUtilizado()) :
                 cartao.getCarteira().getValor().subtract(request.getValorCompra());
 
-            if(valorSaldoRestante.floatValue() < request.getValorCompra().floatValue()){
-                throw new BusinessException("Saldo indisponivel para compra!");
-            }
+        if (valorSaldoRestante.floatValue() < request.getValorCompra().floatValue()) {
+            throw new BusinessException("Saldo indisponivel para compra!");
+        }
 
         var entity = ComprasEntity.builder()
                 .qtdParcelas(request.getQtdParcelas())
@@ -65,8 +63,8 @@ public class ComprasServiceImpl implements ComprasService {
         comprasRepository.persistAndFlush(entity);
 
         List<ParcelaEntity> parcelas = request.getTipoLancamento().build(entity);
-        parcelas.forEach(p->{
-            if(cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO)) {
+        parcelas.forEach(p -> {
+            if (cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO)) {
                 var carteira = this.carteiraService.findCarteiraByIdCartao(p.getCompra().getIdCartao());
                 carteira.setValor(valorSaldoRestante);
                 this.carteiraService.salvar(carteira);
@@ -81,7 +79,7 @@ public class ComprasServiceImpl implements ComprasService {
             }
             parcelaService.salvar(p);
         });
-        if(!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO)){
+        if (!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO)) {
             BigDecimal result = valorSaldoRestante.subtract(request.getValorCompra());
             System.out.println(result);
             cartao.setVlLimiteUtilizado(cartao.getVlLimiteTotal().subtract(result));
@@ -89,7 +87,14 @@ public class ComprasServiceImpl implements ComprasService {
     }
 
     @Override
+    @Transactional
     public List<ComprasEntity> listarComprasByDataAndCartao(UUID idCartao, LocalDate dataAbertura, LocalDate dataFechamento) {
-        return comprasRepository.find("idCartao = ?1 and dataCompra between ?2 and ?3 ", dataAbertura, dataFechamento).list();
+        try {
+
+            return comprasRepository.find("idCartao = ?1  ", idCartao).list();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw e;
+        }
     }
 }
