@@ -30,43 +30,47 @@ public class FechamentoFaturaScheduler extends JobCommons implements Runnable {
 
     @Override
     public void run() {
-        FaturaEntity fatura = faturaService.findFaturaGeradaByDataAndCartao(getIdCartao(), getDataFechamento());
-        if (fatura == null) {
-            fatura = new FaturaEntity();
-            List<ComprasEntity> compras =
-                    comprasService.listarComprasByDataAndCartao(getIdCartao(),
-                            getDataFechamento().minusMonths(1),
-                            getDataFechamento());
 
-
-            if (compras.isEmpty()) {
-                fatura = FaturaEntity.builder()
-                        .vlFatura(BigDecimal.ZERO)
-                        .situacaoFatura(SituacaoFaturaEnum.PAGA)
-                        .dataFaturaGerada(getDataFechamento().atTime(LocalTime.now()))
-                        .dataFaturaVencimento(LocalDate.of(getDataFechamento().getYear(), getDataFechamento().getMonth(), getDiaVencimento()))
-                        .idCartao(getIdCartao())
-                        .build();
-                faturaService.salvarFatura(fatura);
-            } else {
-                BigDecimal valorFatura = BigDecimal.ZERO;
-                for (ComprasEntity compra : compras) {
-                    for (ParcelaEntity parcela : compra.getParcelas()) {
-                        if (!parcela.getSituacao().equals(SituacaoParcelaEnum.PAGA)) {
-                            valorFatura = valorFatura.add(parcela.getValorParcela());
-                        }
+        this.comprasService.listarComprasByCartao(getIdCartao()).stream()
+                .filter(c-> c.getValorCompra().floatValue() > 0 && c.getQtdParcelas() >= 1)
+                .forEach(compras-> {
+                    LocalDate currentDate = LocalDate.now();
+                    if(currentDate.isAfter(getDataFechamento())){
+                        setDataFechamento(getDataFechamento().plusMonths(1));
                     }
-                }
-                fatura.setVlFatura(valorFatura);
-                fatura.setSituacaoFatura(SituacaoFaturaEnum.ABERTA);
-                fatura.setDataFaturaGerada(getDataFechamento().atTime(LocalTime.now()));
-                fatura.setDataFaturaVencimento(LocalDate.of(getDataFechamento().getYear(), getDataFechamento().getMonth(), getDiaVencimento()));
-                fatura.setIdCartao(getIdCartao());
-                this.faturaService.salvarFatura(fatura);
-            }
-        } else {
-            log.info("Ja contem faturas neste periodo para o cartao -->" + fatura.getCartao().getApelido());
-        }
+                    FaturaEntity fatura = abrirFatura(getDataFechamento());
+                    log.info("Fatura carregada Situacao Fatura--> {}, Data do Fechamento--> {}", fatura.getSituacaoFatura(), getDataFechamento());
+                    BigDecimal valorFatura = BigDecimal.ZERO;
+                    List<ParcelaEntity> parcelas = compras.getParcelas().stream().filter(p-> !p.getSituacao().equals(SituacaoParcelaEnum.PAGA))
+                            .toList();
+                    for(ParcelaEntity p : parcelas) {
+                        if(p.getDataParcela().isBefore(getDataFechamento()) || p.getDataParcela().isEqual(getDataFechamento())) {
+                            valorFatura = valorFatura.add(p.getValorParcela());
+                            continue;
+                        }
+                        break;
+                    }
+                    if(getDataFechamento().isBefore(currentDate) || getDataFechamento().isEqual(currentDate)) {
+                        fatura.setSituacaoFatura(SituacaoFaturaEnum.FECHADA);
+                    }
+                    fatura.setVlFatura(valorFatura);
+                    this.faturaService.salvarFatura(fatura);
+                });
+
 
     }
+
+    private FaturaEntity abrirFatura(LocalDate dataFechamento) {
+        FaturaEntity fatura = faturaService.findFaturaGeradaByDataAndCartao(getIdCartao(), dataFechamento);
+        return fatura == null ? FaturaEntity.builder()
+                .vlFatura(BigDecimal.ZERO)
+                .situacaoFatura(SituacaoFaturaEnum.ABERTA)
+                .dataFaturaGerada(dataFechamento.atTime(LocalTime.now()))
+                .dataFaturaVencimento(
+                        LocalDate.of(dataFechamento.getYear(), dataFechamento.getMonth(), getDiaVencimento()))
+                .idCartao(getIdCartao())
+                .build() : fatura;
+    }
+
+
 }

@@ -35,7 +35,6 @@ public class TemporizadorService {
     Instance<FechamentoFaturaScheduler> fechamentoFaturaScheduler;
 
     public static final int JOB_FECHAMENTO_FATURA = 0;
-    public static final int JOB_VALIDACAO_FATURA = 1;
 
     ScheduledExecutorService executorService;
 
@@ -44,26 +43,27 @@ public class TemporizadorService {
     public void init() {
         executorService = Executors.newScheduledThreadPool(5);
         mapJobs = new HashMap<>();
-        cartaoService.listarCartoes().stream().filter(card-> !card.getTipoCartao().equals(TipoCartaoEnum.DEBITO)).forEach(cartao -> {
-            arrayJobs =  new ScheduledFuture<?>[1];
-            arrayJobs[JOB_FECHAMENTO_FATURA] = fechamentoFaturaJob(executorService, cartao);
-        });
+        cartaoService.listarCartoes().stream().filter(card -> !card.getTipoCartao().equals(TipoCartaoEnum.DEBITO))
+                .forEach(cartao -> {
+                    arrayJobs = new ScheduledFuture<?>[1];
+                    arrayJobs[JOB_FECHAMENTO_FATURA] = fechamentoFaturaJob(executorService, cartao);
+                    mapJobs.put("FECHAMENTO", arrayJobs);
+                });
     }
+
     @PreDestroy
     public void stop() {
         executorService.shutdown();
     }
+
     private ScheduledFuture<?> fechamentoFaturaJob(ScheduledExecutorService executor, CartaoEntity cartao) {
 
         ScheduledFuture<?> result;
         FechamentoFaturaScheduler jFechamentoFatura = fechamentoFaturaScheduler.get();
+
         LocalDate hoje = LocalDate.now();
         LocalDate dataFechamento = LocalDate.of(hoje.getYear(), hoje.getMonth(), cartao.getDiaFechamento());
-        if (dataFechamento.isBefore(hoje)) {
-            dataFechamento = dataFechamento.plusMonths(1);
-        }
-        int targetHour = 8;
-        int targetMinute = 0;
+
         jFechamentoFatura.setDataFechamento(dataFechamento);
         jFechamentoFatura.setCartao(cartao.getApelido());
         jFechamentoFatura.setDia(cartao.getDiaFechamento());
@@ -72,18 +72,32 @@ public class TemporizadorService {
         jFechamentoFatura.setDiaVencimento(cartao.getDiaVencimento());
         jFechamentoFatura.imprimeLog();
 
-        long initialDelay = calcularDelay(targetHour, targetMinute);
         result = executor.scheduleAtFixedRate(jFechamentoFatura, 0, 1, TimeUnit.MINUTES);
         return result;
     }
 
-    private long calcularDelay(int targetHour, int targetMinute) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime nextRun = now.withHour(targetHour).withMinute(targetMinute).withSecond(0).withNano(0);
-        if (now.isAfter(nextRun)) {
-            nextRun = nextRun.plusDays(1);
+    public void reagendar() {
+        log.info("Reagendando tarefas...");
+        try {
+            ScheduledFuture<?>[] jobs = mapJobs.get("FECHAMENTO");
+
+            if (jobs != null && jobs[JOB_FECHAMENTO_FATURA] != null) {
+                jobs[JOB_FECHAMENTO_FATURA].cancel(false);
+                mapJobs = new HashMap<>();
+                cartaoService.listarCartoes().stream().filter(card -> !card.getTipoCartao().equals(TipoCartaoEnum.DEBITO))
+                        .forEach(cartao -> {
+                            arrayJobs = new ScheduledFuture<?>[1];
+                            arrayJobs[JOB_FECHAMENTO_FATURA] = fechamentoFaturaJob(executorService, cartao);
+                            mapJobs.put("FECHAMENTO", arrayJobs);
+                        });
+            }else{
+                this.init();
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            throw ex;
         }
-        return Duration.between(now, nextRun).getSeconds();
+
     }
 
 

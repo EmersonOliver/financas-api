@@ -88,10 +88,9 @@ public class ComprasServiceImpl implements ComprasService {
 
     @Override
     @Transactional
-    public List<ComprasEntity> listarComprasByDataAndCartao(UUID idCartao, LocalDate dataAbertura, LocalDate dataFechamento) {
+    public List<ComprasEntity> listarComprasByCartao(UUID idCartao) {
         try {
-
-            return comprasRepository.find("idCartao = ?1  ", idCartao).list();
+            return comprasRepository.find("idCartao = ?1", idCartao).list();
         } catch (Exception e) {
             log.error(e.getMessage());
             throw e;

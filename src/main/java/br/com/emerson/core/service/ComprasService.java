@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface ComprasService {
 
     void salvar(ComprasRequest request);
-    List<ComprasEntity> listarComprasByDataAndCartao(UUID idCartao, LocalDate dataAbertura, LocalDate dataFechamento);
+    List<ComprasEntity> listarComprasByCartao(UUID idCartao);
 
 
 }

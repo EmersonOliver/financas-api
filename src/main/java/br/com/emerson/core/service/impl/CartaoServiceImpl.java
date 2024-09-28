@@ -2,11 +2,9 @@ package br.com.emerson.core.service.impl;
 
 import br.com.emerson.app.dto.request.CartaoRequest;
 import br.com.emerson.app.dto.response.CartaoResponse;
-import br.com.emerson.app.dto.response.ComprasResponse;
+import br.com.emerson.app.entrypoint.cron.service.TemporizadorService;
 import br.com.emerson.core.dataprovider.CartaoRepository;
 import br.com.emerson.core.entity.CartaoEntity;
-import br.com.emerson.core.entity.MovimentacaoCarteiraEntity;
-import br.com.emerson.core.enums.MovimentacaoEnum;
 import br.com.emerson.core.enums.TipoCartaoEnum;
 import br.com.emerson.core.service.CartaoService;
 import br.com.emerson.core.service.CarteiraService;
@@ -19,7 +17,6 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +33,9 @@ public class CartaoServiceImpl implements CartaoService {
 
     @Inject
     MovimentacaoService movimentacaoService;
+
+//    @Inject
+//    TemporizadorService temporizadorService;
 
     @Override
     @Transactional
@@ -62,6 +62,7 @@ public class CartaoServiceImpl implements CartaoService {
                 throw new BusinessException("Necessario vincular o cartao há uma carteira valida!");
             });
         }
+//        this.temporizadorService.reagendar();
     }
 
     @Override

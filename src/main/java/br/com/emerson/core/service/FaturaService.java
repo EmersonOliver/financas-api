@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface FaturaService {
 
     void salvarFatura(FaturaEntity fatura);
+    void atualizarValorFatura(FaturaEntity fatura);
     FaturaEntity findFaturaGeradaByData(LocalDate dataFechamento);
     FaturaEntity findFaturaGeradaByDataAndCartao(UUID idCartao, LocalDate dataFechamento);
     List<FaturaEntity> findFaturaGeradaByData(List<LocalDate> range);

@@ -2,6 +2,7 @@ package br.com.emerson.core.service.impl;
 
 import br.com.emerson.core.dataprovider.FaturaRepository;
 import br.com.emerson.core.entity.FaturaEntity;
+import br.com.emerson.core.enums.SituacaoFaturaEnum;
 import br.com.emerson.core.service.FaturaService;
 import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,7 +30,41 @@ public class FaturaServiceImpl implements FaturaService {
     @Override
     @Transactional
     public void salvarFatura(FaturaEntity fatura) {
-        faturaRepository.persistAndFlush(fatura);
+        try {
+            if (fatura.getIdFatura() == null)
+                faturaRepository.persistAndFlush(fatura);
+            else
+                this.faturaRepository
+                        .update("update FaturaEntity " +
+                                        "set vlFatura=?1, " +
+                                        "idCartao=?2," +
+                                        "situacaoFatura=?3," +
+                                        "dataFaturaGerada=?4," +
+                                        "dataFaturaVencimento=?5" +
+                                        "where idFatura =?6",
+                                fatura.getVlFatura(),
+                                fatura.getIdCartao(),
+                                fatura.getSituacaoFatura(),
+                                fatura.getDataFaturaGerada(),
+                                fatura.getDataFaturaVencimento(),
+                                fatura.getIdFatura());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void atualizarValorFatura(FaturaEntity fatura) {
+        try {
+            this.faturaRepository
+                    .update("update FaturaEntity set vlFatura=?1 where idFatura =?2", fatura.getVlFatura(),
+                            fatura.getIdFatura());
+
+        } catch (Exception e) {
+            log.info(e.getMessage());
+        }
+
     }
 
     @Override
@@ -66,7 +101,7 @@ public class FaturaServiceImpl implements FaturaService {
                     LocalDateTime.ofInstant(fim.toInstant(), zoneId).withHour(23).withMinute(59).withSecond(59).withNano(99));
 
             return faturaRepository.find("where idCartao=:idCartao and " +
-                    "dataFaturaGerada between :dataInicio and :dataFim order by dataFaturaGerada DESC",
+                                    "dataFaturaGerada between :dataInicio and :dataFim order by dataFaturaGerada DESC",
                             Parameters.with("idCartao", idCartao).and("dataInicio", localDateTimes.get(0)).and("dataFim", localDateTimes.get(1)))
                     .list();
         } catch (ParseException e) {
@@ -77,7 +112,7 @@ public class FaturaServiceImpl implements FaturaService {
     @Override
     @Transactional
     public List<FaturaEntity> findFaturaByIdCartao(UUID idCartao) {
-           return faturaRepository.find("where idCartao=:idCartao order by dataFaturaGerada DESC",
+        return faturaRepository.find("where idCartao=:idCartao order by dataFaturaGerada DESC",
                         Parameters.with("idCartao", idCartao))
                 .list();
     }

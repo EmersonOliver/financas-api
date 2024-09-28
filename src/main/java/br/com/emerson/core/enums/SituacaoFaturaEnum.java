@@ -10,8 +10,8 @@ public enum SituacaoFaturaEnum {
 
     PAGA {
         @Override
-        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
-            BigDecimal valorFatura = compras.stream()
+        public void build(List<ParcelaEntity> parcelas, FaturaEntity entity) {
+            BigDecimal valorFatura = parcelas.stream()
                     .map(ParcelaEntity::getValorParcela)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             entity.setVlFatura(valorFatura);
@@ -20,8 +20,8 @@ public enum SituacaoFaturaEnum {
 
     VENCIDA {
         @Override
-        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
-            BigDecimal valorFatura = compras.stream()
+        public void build(List<ParcelaEntity> parcelas, FaturaEntity entity) {
+            BigDecimal valorFatura = parcelas.stream()
                     .map(ParcelaEntity::getValorParcela)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             entity.setVlFatura(valorFatura);
@@ -29,8 +29,8 @@ public enum SituacaoFaturaEnum {
     },
     PENDENTE {
         @Override
-        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
-            BigDecimal valorFatura = compras.stream()
+        public void build(List<ParcelaEntity> parcelas, FaturaEntity entity) {
+            BigDecimal valorFatura = parcelas.stream()
                     .map(ParcelaEntity::getValorParcela)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             entity.setVlFatura(valorFatura);
@@ -38,20 +38,21 @@ public enum SituacaoFaturaEnum {
     },
     ABERTA {
         @Override
-        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
-            BigDecimal valorFatura = compras.stream()
+        public void build(List<ParcelaEntity> parcelas, FaturaEntity entity) {
+            BigDecimal valorFatura = parcelas.stream()
                     .map(ParcelaEntity::getValorParcela)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             entity.setVlFatura(valorFatura);
+            entity.setSituacaoFatura(ABERTA);
         }
     },
     FECHADA {
         @Override
-        public void build(List<ParcelaEntity> compras, FaturaEntity entity) {
+        public void build(List<ParcelaEntity> parcelas, FaturaEntity entity) {
 
         }
     };
 
 
-    public abstract void build(List<ParcelaEntity> compras, FaturaEntity entity);
+    public abstract void build(List<ParcelaEntity> parcelas, FaturaEntity entity);
 }

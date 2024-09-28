@@ -2,9 +2,11 @@ package br.com.emerson.app.entrypoint.resources;
 
 import br.com.emerson.app.dto.request.CartaoRequest;
 import br.com.emerson.app.dto.response.CartaoResponse;
+import br.com.emerson.app.entrypoint.cron.service.TemporizadorService;
 import br.com.emerson.core.enums.TipoCartaoEnum;
 import br.com.emerson.core.service.CartaoService;
 import jakarta.inject.Inject;
+import jakarta.persistence.Temporal;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 
@@ -18,10 +20,14 @@ public class CartaoResource {
     @Inject
     CartaoService cartaoService;
 
+    @Inject
+    TemporizadorService temporizadorService;
+
     @POST
     @Path("cadastrar")
     public Response cadastrarCartao(CartaoRequest request) {
         cartaoService.salvar(request);
+        this.temporizadorService.reagendar();
         return Response.ok().build();
     }
 
