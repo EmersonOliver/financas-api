@@ -56,7 +56,12 @@ public class ParcelaServiceImpl implements ParcelaService {
     @Override
     @Transactional
     public void atualizar(Long id, ParcelaEntity parcela) {
-
+        try {
+            this.parcelaRepository.update("UPDATE ParcelaEntity set idFatura=?1 where idParcela =?2",
+                    parcela.getIdFatura(), parcela.getIdParcela());
+        }catch (Exception e) {
+            log.error(e.getMessage());
+        }
     }
 
     @Override

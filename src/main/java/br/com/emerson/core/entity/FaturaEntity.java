@@ -47,6 +47,9 @@ public class FaturaEntity {
     @Column(name = "data_fatura_vencimento")
     private LocalDate dataFaturaVencimento;
 
+    @Column(name = "data_pagamento")
+    private LocalDate dataPagamento;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JsonIgnoreProperties("faturas")
     @JoinColumn(name = "id_cartao", referencedColumnName = "id_cartao", updatable = false, insertable = false, foreignKey = @ForeignKey(name = "fk_id_cartao_fatura"))

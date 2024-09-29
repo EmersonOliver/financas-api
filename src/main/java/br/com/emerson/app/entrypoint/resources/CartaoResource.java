@@ -26,8 +26,8 @@ public class CartaoResource {
     @POST
     @Path("cadastrar")
     public Response cadastrarCartao(CartaoRequest request) {
-        cartaoService.salvar(request);
-        this.temporizadorService.reagendar();
+       var cartao = cartaoService.salvar(request);
+        this.temporizadorService.cadastrarNovoJobCartao(cartao);
         return Response.ok().build();
     }
 

@@ -1,7 +1,10 @@
 package br.com.emerson.app.entrypoint.cron.service;
 
 import br.com.emerson.app.entrypoint.cron.FechamentoFaturaScheduler;
+import br.com.emerson.app.entrypoint.cron.LancamentoFaturaScheduler;
+import br.com.emerson.app.entrypoint.cron.commons.JobCommons;
 import br.com.emerson.core.entity.CartaoEntity;
+import br.com.emerson.core.entity.FaturaEntity;
 import br.com.emerson.core.enums.TipoCartaoEnum;
 import br.com.emerson.core.service.CartaoService;
 import io.quarkus.runtime.Startup;
@@ -12,93 +15,91 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @Singleton
 @Startup
 @Slf4j
 public class TemporizadorService {
 
-    private Map<String, ScheduledFuture<?>[]> mapJobs;
-    private ScheduledFuture<?>[] arrayJobs;
+    private final Map<String, ScheduledFuture<?>> jobMap = new HashMap<>();
 
     @Inject
     CartaoService cartaoService;
 
     @Inject
-    Instance<FechamentoFaturaScheduler> fechamentoFaturaScheduler;
+    Instance<FechamentoFaturaScheduler> fechamentoFaturaSchedulers;
 
-    public static final int JOB_FECHAMENTO_FATURA = 0;
+    @Inject
+    Instance<LancamentoFaturaScheduler> lancamentoFaturaSchedulers;
 
     ScheduledExecutorService executorService;
-
 
     @PostConstruct
     public void init() {
         executorService = Executors.newScheduledThreadPool(5);
-        mapJobs = new HashMap<>();
-        cartaoService.listarCartoes().stream().filter(card -> !card.getTipoCartao().equals(TipoCartaoEnum.DEBITO))
-                .forEach(cartao -> {
-                    arrayJobs = new ScheduledFuture<?>[1];
-                    arrayJobs[JOB_FECHAMENTO_FATURA] = fechamentoFaturaJob(executorService, cartao);
-                    mapJobs.put("FECHAMENTO", arrayJobs);
-                });
+        try {
+            log.info("Agendamento de job cartao de credito");
+            cartaoService.listarCartoes().stream()
+                    .filter(cartao -> !cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO))
+                    .forEach(cartao->{
+                       LocalDate fechamento = jobFechamentoFaturaJob(cartao);
+                        jobLancamentoFaturaJob(cartao, fechamento);
+                    });
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
     }
 
     @PreDestroy
     public void stop() {
         executorService.shutdown();
+        jobMap.values().forEach(future -> future.cancel(true));
     }
 
-    private ScheduledFuture<?> fechamentoFaturaJob(ScheduledExecutorService executor, CartaoEntity cartao) {
+    private void jobLancamentoFaturaJob(CartaoEntity cartao, LocalDate fechamento) {
+        LancamentoFaturaScheduler jLancamento = lancamentoFaturaSchedulers.get();
+        buildJobCommons(jLancamento, cartao, fechamento);
+        ScheduledFuture<?> jobLancamento = executorService.scheduleAtFixedRate(jLancamento, 0, 2, TimeUnit.SECONDS);
+        jobMap.put(cartao.getApelido()+"_LANCAMENTO", jobLancamento);
+    }
 
-        ScheduledFuture<?> result;
-        FechamentoFaturaScheduler jFechamentoFatura = fechamentoFaturaScheduler.get();
-
+    private LocalDate jobFechamentoFaturaJob(CartaoEntity cartao) {
+        FechamentoFaturaScheduler jFechamentoFatura = fechamentoFaturaSchedulers.get();
         LocalDate hoje = LocalDate.now();
-        LocalDate dataFechamento = LocalDate.of(hoje.getYear(), hoje.getMonth(), cartao.getDiaFechamento());
-
-        jFechamentoFatura.setDataFechamento(dataFechamento);
-        jFechamentoFatura.setCartao(cartao.getApelido());
-        jFechamentoFatura.setDia(cartao.getDiaFechamento());
-        jFechamentoFatura.setDigitosFinais(cartao.getDigitosFinais());
-        jFechamentoFatura.setIdCartao(cartao.getIdCartao());
-        jFechamentoFatura.setDiaVencimento(cartao.getDiaVencimento());
-        jFechamentoFatura.imprimeLog();
-
-        result = executor.scheduleAtFixedRate(jFechamentoFatura, 0, 1, TimeUnit.MINUTES);
-        return result;
+        LocalDate dataFechamento = cartao.getFaturas().isEmpty() ? LocalDate.of(hoje.getYear(), hoje.getMonth(), cartao.getDiaFechamento())
+                : cartao.getFaturas().stream()
+                .map(FaturaEntity::getDataFaturaGerada)
+                .map(LocalDateTime::toLocalDate)
+                .max(LocalDate::compareTo)
+                .orElse(LocalDate.of(hoje.getYear(),
+                        hoje.getMonth(), cartao.getDiaFechamento())); // valor padrão
+        buildJobCommons(jFechamentoFatura, cartao, dataFechamento);
+        ScheduledFuture<?> jobFechamento = executorService.scheduleAtFixedRate(jFechamentoFatura, 0, 10, TimeUnit.SECONDS);
+        jobMap.put(cartao.getApelido()+"_FECHAMENTO", jobFechamento);
+        return dataFechamento;
     }
 
-    public void reagendar() {
-        log.info("Reagendando tarefas...");
-        try {
-            ScheduledFuture<?>[] jobs = mapJobs.get("FECHAMENTO");
-
-            if (jobs != null && jobs[JOB_FECHAMENTO_FATURA] != null) {
-                jobs[JOB_FECHAMENTO_FATURA].cancel(false);
-                mapJobs = new HashMap<>();
-                cartaoService.listarCartoes().stream().filter(card -> !card.getTipoCartao().equals(TipoCartaoEnum.DEBITO))
-                        .forEach(cartao -> {
-                            arrayJobs = new ScheduledFuture<?>[1];
-                            arrayJobs[JOB_FECHAMENTO_FATURA] = fechamentoFaturaJob(executorService, cartao);
-                            mapJobs.put("FECHAMENTO", arrayJobs);
-                        });
-            }else{
-                this.init();
-            }
-        } catch (Exception ex) {
-            log.error(ex.getMessage());
-            throw ex;
+    public void cadastrarNovoJobCartao(CartaoEntity cartao) {
+        if (!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO)) {
+            jobFechamentoFaturaJob(cartao);
         }
-
     }
 
-
+    private void buildJobCommons(JobCommons jobCommons, CartaoEntity cartao, LocalDate dataFechamento) {
+        jobCommons.setDataFechamento(dataFechamento);
+        jobCommons.setCartao(cartao.getApelido());
+        jobCommons.setDia(cartao.getDiaFechamento());
+        jobCommons.setDigitosFinais(cartao.getDigitosFinais());
+        jobCommons.setIdCartao(cartao.getIdCartao());
+        jobCommons.setDiaVencimento(cartao.getDiaVencimento());
+        jobCommons.imprimeLog();
+    }
 }

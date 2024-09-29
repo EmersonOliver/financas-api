@@ -60,7 +60,6 @@ public class FaturaServiceImpl implements FaturaService {
             this.faturaRepository
                     .update("update FaturaEntity set vlFatura=?1 where idFatura =?2", fatura.getVlFatura(),
                             fatura.getIdFatura());
-
         } catch (Exception e) {
             log.info(e.getMessage());
         }

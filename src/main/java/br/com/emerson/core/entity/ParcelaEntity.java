@@ -26,12 +26,15 @@ import java.time.LocalDate;
 public class ParcelaEntity {
 
     @Id
-    @GeneratedValue(generator ="sq_id_parcela", strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(generator = "sq_id_parcela", strategy = GenerationType.SEQUENCE)
     @Column(name = "id_parcela")
     private Long idParcela;
 
     @Column(name = "id_compra")
     private Long idCompra;
+
+    @Column(name = "id_fatura")
+    private Long idFatura;
 
     @Column(name = "vl_parcela")
     private BigDecimal valorParcela;
@@ -50,4 +53,8 @@ public class ParcelaEntity {
     @JoinColumn(name = "id_compra", referencedColumnName = "id_compra", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "fk_id_parcela_compra"))
     private ComprasEntity compra;
 
+    @JsonIgnoreProperties("cartao")
+    @ManyToOne
+    @JoinColumn(name = "id_fatura", referencedColumnName = "id_fatura", insertable = false, updatable = false)
+    private FaturaEntity fatura;
 }

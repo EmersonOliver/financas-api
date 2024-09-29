@@ -1,5 +1,6 @@
 package br.com.emerson.app.entrypoint.cron.commons;
 
+import br.com.emerson.core.entity.FaturaEntity;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +19,7 @@ public class JobCommons {
     private String digitosFinais;
 
     public void imprimeLog() {
-        log.info("Criando job =[" + cartao +"]");
+        log.info("Criando job =[" + cartao + "]");
         log.info("Data Fechamento =[" + dataFechamento.toString() + "]");
     }
 

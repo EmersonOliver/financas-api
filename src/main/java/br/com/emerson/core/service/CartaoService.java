@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public interface CartaoService {
 
-    void salvar(CartaoRequest request);
+    CartaoEntity salvar(CartaoRequest request);
 
     void atualizar(UUID uuid, CartaoRequest request);
 

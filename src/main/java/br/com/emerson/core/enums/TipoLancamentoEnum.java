@@ -44,13 +44,21 @@ public enum TipoLancamentoEnum {
         public List<ParcelaEntity> build(ComprasEntity comprasEntity) {
             var situacaoParcela = comprasEntity.getCartao().getTipoCartao().equals(TipoCartaoEnum.DEBITO) ?
                     SituacaoParcelaEnum.PAGA : SituacaoParcelaEnum.PENDENTE;
+            LocalDate dataCompra = comprasEntity.getDataCompra();
+            LocalDate dataFechamento = LocalDate.of(dataCompra.getYear(), dataCompra.getMonth(),comprasEntity.getCartao().getDiaFechamento());
+            LocalDate dataParcela;
+            if(dataCompra.isBefore(dataFechamento)) {
+                dataParcela = dataCompra.plusMonths(0);;
+            } else {
+                dataParcela = dataCompra.plusMonths(1);
+            }
             return List.of(ParcelaEntity.builder()
                     .parcela(comprasEntity.getQtdParcelas())
                     .compra(comprasEntity)
                     .valorParcela(comprasEntity.getValorCompra())
                     .idCompra(comprasEntity.getIdCompra())
                             .situacao(situacaoParcela)
-                            .dataParcela(comprasEntity.getDataCompra())
+                            .dataParcela(dataParcela)
                     .build());
         }
     },

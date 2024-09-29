@@ -39,7 +39,7 @@ public class CartaoServiceImpl implements CartaoService {
 
     @Override
     @Transactional
-    public void salvar(CartaoRequest request) {
+    public CartaoEntity salvar(CartaoRequest request) {
         log.info("Persistindo cartao...." + request.getDigitosFinais());
         cartaoRepository.find("where UPPER(apelido) =:apelido",
                         Parameters.with("apelido", request.getApelido().toUpperCase()))
@@ -62,7 +62,7 @@ public class CartaoServiceImpl implements CartaoService {
                 throw new BusinessException("Necessario vincular o cartao há uma carteira valida!");
             });
         }
-//        this.temporizadorService.reagendar();
+        return cartaoEntity;
     }
 
     @Override
