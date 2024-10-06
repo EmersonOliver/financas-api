@@ -12,4 +12,5 @@ public interface ContasService {
     List<ContasEntity> listarContas();
     List<ContasEntity> listarContasAPagar(String date);
     BigDecimal totalContasApagar(String date);
+    List<ContasEntity> listarCustoFixo();
 }

@@ -28,6 +28,7 @@ public class ContasServiceImpl implements ContasService {
                 .origemConta(conta.getOrigemConta())
                 .valorConta(conta.getValorConta())
                 .tipoConta(conta.getTipoConta())
+                .custoFixo(conta.getCustoFixo())
                 .build();
         this.contasRepository.persistAndFlush(entity);
     }
@@ -53,4 +54,10 @@ public class ContasServiceImpl implements ContasService {
                 Parameters.with("dtInicio", inicio).and("dtFim",fimMes)).list().stream().map(ContasEntity::getValorConta)
                 .reduce(BigDecimal.ZERO,BigDecimal::add);
     }
+
+    @Override
+    public List<ContasEntity> listarCustoFixo(){
+        return this.contasRepository.listAll().stream().filter(ContasEntity::getCustoFixo).toList();
+    }
+
 }

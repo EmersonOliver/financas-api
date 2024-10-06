@@ -20,4 +20,5 @@ public class ContaRequest {
     private BigDecimal valorConta;
     private LocalDate dtConta;
     private LocalDate dtVencimentoConta;
+    private Boolean custoFixo;
 }

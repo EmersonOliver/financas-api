@@ -38,6 +38,9 @@ public class ContasEntity {
     @Column(name = "dt_vencimento_conta")
     private LocalDate dtVencimentoConta;
 
+    @Column(name = "custo_fixo")
+    private Boolean custoFixo;
+
 
 
 }
