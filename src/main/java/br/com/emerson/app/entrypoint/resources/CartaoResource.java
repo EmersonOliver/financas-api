@@ -5,6 +5,7 @@ import br.com.emerson.app.dto.response.CartaoResponse;
 import br.com.emerson.app.entrypoint.cron.service.TemporizadorService;
 import br.com.emerson.core.enums.TipoCartaoEnum;
 import br.com.emerson.core.service.CartaoService;
+import br.com.emerson.mapper.CartaoMapper;
 import jakarta.inject.Inject;
 import jakarta.persistence.Temporal;
 import jakarta.ws.rs.*;
@@ -42,24 +43,7 @@ public class CartaoResource {
     @Path("detalhar/{id}")
     public Response detalharCartao(@PathParam("id") UUID uuid) {
         var cartao = cartaoService.findCartaoById(uuid);
-        return Response.ok(CartaoResponse.builder()
-                        .idCartao(cartao.getIdCartao())
-                        .apelido(cartao.getApelido())
-                        .digitosFinais(cartao.getDigitosFinais())
-                        .diaFechamento(!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getDiaFechamento() : null)
-                        .diaVencimento(!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getDiaVencimento() : null)
-                        .tipoCartao(cartao.getTipoCartao())
-                        .vlLimiteTotal(!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getVlLimiteTotal() : null)
-                        .vlLimiteUtilizado(!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getVlLimiteUtilizado() : null)
-                        .vlLimiteRestante(!cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getVlLimiteTotal().subtract(cartao.getVlLimiteUtilizado()) : null)
-                        .vlSaldo(cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getCarteira().getValor() : null)
-                        .vlSaldoUtilizado(TipoCartaoEnum.valorComprasMesAtual(cartao))
-                        .vlSaldoRestante(cartao.getTipoCartao().equals(TipoCartaoEnum.DEBITO) ? cartao.getCarteira().getValor().subtract(TipoCartaoEnum.valorComprasMesAtual(cartao)) : null)
-                        .cartaoReferencia(cartao.getIdCartaoReferencia())
-                        .icAtivo(cartao.getIcAtivo())
-                        .compras(cartao.getCompras())
-                        .faturas(cartao.getFaturas())
-                        .build())
+        return Response.ok(CartaoMapper.toCartaoResponse(cartao))
                 .build();
     }
 

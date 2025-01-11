@@ -56,7 +56,8 @@ public class CarteiraResource {
     @Path("simulacao/{id}")
     public Response getSimulacao(@PathParam("id") Long id) {
         BigDecimal saldo = BigDecimal.ZERO;
-        SimulacaoCarteiraResponse simulacao = this.carteiraService.simulacaoCarteiraResponse(id).stream().reduce(SimulacaoCarteiraResponse.builder().build(), (acc, sim) -> {
+        SimulacaoCarteiraResponse simulacao = this.carteiraService.simulacaoCarteiraResponse(id)
+                .stream().reduce(SimulacaoCarteiraResponse.builder().build(), (acc, sim) -> {
             acc.setSaldoFuturo(saldo.add(sim.getSaldoFuturo()));
             acc.setData(sim.getData());
             return acc;

@@ -10,6 +10,7 @@ import br.com.emerson.core.service.CartaoService;
 import br.com.emerson.core.service.CarteiraService;
 import br.com.emerson.core.service.MovimentacaoService;
 import br.com.emerson.domain.exception.BusinessException;
+import br.com.emerson.mapper.CartaoMapper;
 import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -49,7 +50,7 @@ public class CartaoServiceImpl implements CartaoService {
                     }
                 });
 
-        var cartaoEntity = request.getTipoCartao().build(request);
+        var cartaoEntity = CartaoMapper.toCartaoEntityByRequest(request);
         cartaoRepository.persistAndFlush(cartaoEntity);
 
         if (cartaoEntity.getTipoCartao().equals(TipoCartaoEnum.DEBITO)) {
